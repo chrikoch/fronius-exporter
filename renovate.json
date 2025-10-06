@@ -4,6 +4,7 @@
     ":gitSignOff",
     ":disableDependencyDashboard"
   ],
+  "forkProcessing": "enabled",
   "labels": [
     "dependency"
   ],
