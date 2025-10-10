@@ -9,7 +9,7 @@ import (
 
 	"github.com/knadh/koanf/v2"
 
-	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/env/v2"
 	"github.com/knadh/koanf/providers/posflag"
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -88,16 +88,16 @@ func loadConfigHierarchy(fs *flag.FlagSet, args []string, config *Configuration)
 	koanfInstance := koanf.New(".")
 
 	// Environment variables
-	if err := koanfInstance.Load(env.Provider("", ".", func(s string) string {
+	if err := koanfInstance.Load(env.Provider(".", env.Opt{TransformFunc: func(k, v string) (string, any) {
 		/*
 			Configuration can contain hierarchies (YAML, etc.) and CLI flags dashes.
 			To read environment variables with hierarchies and dashes we replace the hierarchy delimiter with double underscore and dashes with single underscore.
 			So that parent.child-with-dash becomes PARENT__CHILD_WITH_DASH
 		*/
-		s = strings.Replace(strings.ToLower(s), "__", ".", -1)
-		s = strings.Replace(strings.ToLower(s), "_", "-", -1)
-		return s
-	}), nil); err != nil {
+		k = strings.Replace(strings.ToLower(k), "__", ".", -1)
+		k = strings.Replace(strings.ToLower(k), "_", "-", -1)
+		return k, v
+	}}), nil); err != nil {
 		log.WithError(err).Fatal("Could not parse flags")
 	}
 
