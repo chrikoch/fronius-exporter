@@ -37,11 +37,12 @@ func main() {
 		ArchiveEnabled:          config.Symo.ArchiveEnabled,
 		InverterRealtimeEnabled: config.Symo.InverterRealtimeEnabled,
 		MeterRealtimeEnabled:    config.Symo.MeterRealtimeEnabled,
+		StorageRealtimeEnabled:  config.Symo.StorageRealtimeEnabled,
 	})
 	if err != nil {
 		log.WithError(err).Fatal("Cannot initialize Fronius Symo client.")
 	}
-	if !config.Symo.ArchiveEnabled && !config.Symo.PowerFlowEnabled && !config.Symo.InverterRealtimeEnabled && !config.Symo.MeterRealtimeEnabled {
+	if !config.Symo.ArchiveEnabled && !config.Symo.PowerFlowEnabled && !config.Symo.InverterRealtimeEnabled && !config.Symo.MeterRealtimeEnabled && !config.Symo.StorageRealtimeEnabled {
 		log.Fatal("All scrape endpoints are disabled. You need enable at least one endpoint.")
 	}
 

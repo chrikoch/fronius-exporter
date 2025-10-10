@@ -127,3 +127,22 @@ func Test_Symo_GetMeterRealtimeData_GivenUrl_WhenRequestData_ThenParseStruct(t *
 	assert.Equal(t, float64(12345.67), p.EnergyReal_WAC_Sum_Produced)
 	assert.Equal(t, float64(7654.32), p.EnergyReal_WAC_Sum_Consumed)
 }
+
+func Test_Symo_GetStorageRealtimeData_GivenUrl_WhenRequestData_ThenParseStruct(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		payload, err := os.ReadFile("testdata/storagerealtimedata.json")
+		require.NoError(t, err)
+		_, _ = rw.Write(payload)
+	}))
+
+	c, err := NewSymoClient(ClientOptions{
+		URL:                    server.URL,
+		StorageRealtimeEnabled: true,
+	})
+	require.NoError(t, err)
+
+	p, err := c.GetStorageRealtimeData()
+	assert.NoError(t, err)
+	assert.NotNil(t, p)
+	assert.Equal(t, 30.5, p.Controller.Temperature_Cell)
+}

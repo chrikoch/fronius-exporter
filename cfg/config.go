@@ -46,6 +46,7 @@ func setupCliFlags(version string, fs *flag.FlagSet, config *Configuration) {
 	fs.Bool("symo.enable-archive", config.Symo.ArchiveEnabled, "Enable/disable scraping of archive data")
 	fs.Bool("symo.enable-inverter-realtime", config.Symo.InverterRealtimeEnabled, "Enable/disable scraping of inverter real time data")
 	fs.Bool("symo.enable-meter-realtime", config.Symo.MeterRealtimeEnabled, "Enable/disable scraping of meter real time data")
+	fs.Bool("symo.enable-storage-realtime", config.Symo.StorageRealtimeEnabled, "Enable/disable scraping of storage real time data")
 }
 
 func postLoadProcess(config *Configuration) {

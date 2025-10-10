@@ -17,6 +17,8 @@ const (
 	InverterRealtimeDataPath = "/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData"
 	// get the current meter data
 	MeterRealtimeDataPath = "/solar_api/v1/GetMeterRealtimeData.cgi"
+	// get the current storage data
+	StorageRealtimeDataPath = "/solar_api/v1/GetStorageRealtimeData.cgi?Scope=System"
 )
 
 type (
@@ -106,6 +108,18 @@ type (
 		}
 	}
 
+	symoStorageRealtime struct {
+		Body struct {
+			Data map[string]SymoStorageRealtimeData `json:"Data"`
+		}
+	}
+
+	SymoStorageRealtimeData struct {
+		Controller struct {
+			Temperature_Cell float64 `json:"Temperature_Cell"`
+		} `json:"Controller"`
+	}
+
 	SymoMeterRealtimeData struct {
 		EnergyReal_WAC_Sum_Produced float64 `json:"EnergyReal_WAC_Sum_Produced"`
 		EnergyReal_WAC_Sum_Consumed float64 `json:"EnergyReal_WAC_Sum_Consumed"`
@@ -148,6 +162,7 @@ type (
 		ArchiveEnabled          bool
 		InverterRealtimeEnabled bool
 		MeterRealtimeEnabled    bool
+		StorageRealtimeEnabled  bool
 	}
 )
 
@@ -223,6 +238,30 @@ func (c *SymoClient) GetMeterRealtimeData() (*SymoMeterRealtimeData, error) {
 	}
 	defer response.Body.Close()
 	p := symoMeter{}
+	err = json.NewDecoder(response.Body).Decode(&p)
+	if err != nil {
+		return nil, err
+	}
+	data := p.Body.Data["0"]
+	return &data, nil
+}
+
+// GetStorageRealtimeData returns the parsed data from the Symo device.
+func (c *SymoClient) GetStorageRealtimeData() (*SymoStorageRealtimeData, error) {
+	u, err := url.Parse(c.Options.URL + StorageRealtimeDataPath)
+	if err != nil {
+		return nil, err
+	}
+
+	c.request.URL = u
+	client := http.DefaultClient
+	client.Timeout = c.Options.Timeout
+	response, err := client.Do(c.request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	p := symoStorageRealtime{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
 		return nil, err

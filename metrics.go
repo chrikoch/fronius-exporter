@@ -150,26 +150,33 @@ var (
 		Name:      "site_meter_real_time_data_energy_real_wac_sum_consumed",
 		Help:      "Site meter real time data energy real WAC sum consumed in Wh",
 	})
+	siteStorageRealTimeDataTemperatureCell = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "site_storage_real_time_data_temperature_cell",
+		Help:      "Site storage real time data temperature cell in C",
+	})
 )
 
 func collectMetricsFromTarget(client *fronius.SymoClient) {
 	start := time.Now()
 	log.WithFields(log.Fields{
-		"url":              client.Options.URL,
-		"timeout":          client.Options.Timeout,
-		"powerFlowEnabled": client.Options.PowerFlowEnabled,
-		"archiveEnabled":   client.Options.ArchiveEnabled,
-		"inverterRealtime": client.Options.InverterRealtimeEnabled,
-		"meterRealtime":    client.Options.MeterRealtimeEnabled,
+		"url":                  client.Options.URL,
+		"timeout":              client.Options.Timeout,
+		"powerFlowEnabled":     client.Options.PowerFlowEnabled,
+		"archiveEnabled":       client.Options.ArchiveEnabled,
+		"inverterRealtime":     client.Options.InverterRealtimeEnabled,
+		"meterRealtime":        client.Options.MeterRealtimeEnabled,
+		"storageRealtime":      client.Options.StorageRealtimeEnabled,
 	}).Debug("Requesting data.")
 
 	wg := sync.WaitGroup{}
-	wg.Add(4)
+	wg.Add(5)
 
 	collectPowerFlowData(client, &wg)
 	collectArchiveData(client, &wg)
 	collectInverterRealtimeData(client, &wg)
 	collectMeterRealtimeData(client, &wg)
+	collectStorageRealtimeData(client, &wg)
 
 	wg.Wait()
 	elapsed := time.Since(start)
@@ -212,6 +219,19 @@ func collectMeterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 			return
 		}
 		parseMeterRealtimeData(meterData)
+	}
+}
+
+func collectStorageRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
+	defer w.Done()
+	if client.Options.StorageRealtimeEnabled {
+		storageData, err := client.GetStorageRealtimeData()
+		if err != nil {
+			log.WithError(err).Warn("Could not collect Symo storage realtime metrics.")
+			scrapeErrorCount.Add(1)
+			return
+		}
+		parseStorageRealtimeData(storageData)
 	}
 }
 
@@ -272,6 +292,11 @@ func parseMeterRealtimeData(data *fronius.SymoMeterRealtimeData) {
 	log.WithField("MeterRealtimeData", *data).Debug("Parsing data.")
 	siteMeterRealTimeDataEnergyReal_WAC_Sum_Consumed.Set(data.EnergyReal_WAC_Sum_Consumed)
 	siteMeterRealTimeDataEnergyReal_WAC_Sum_Produced.Set(data.EnergyReal_WAC_Sum_Produced)
+}
+
+func parseStorageRealtimeData(data *fronius.SymoStorageRealtimeData) {
+	log.WithField("StorageRealtimeData", *data).Debug("Parsing data.")
+	siteStorageRealTimeDataTemperatureCell.Set(data.Controller.Temperature_Cell)
 }
 
 func parseArchiveMetrics(data map[string]fronius.InverterArchive) {
