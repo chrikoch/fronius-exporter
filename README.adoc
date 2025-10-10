@@ -9,15 +9,17 @@ ifdef::env-github[]
 :ext-relative: {outfilesuffix}
 endif::[]
 
-= Looking for maintainer
+= Project Status
+
+This is a fork of https://github.com/ccremer/fronius-exporter I forked it for my personal use, because the original project is looking for a maintainer which makes it harder to provide merge requests. Once the issue is resolved, I'm happingly adding my changes to the original project!
 
 See https://github.com/ccremer/fronius-exporter/issues/134
 
 = Fronius Exporter
 
 ifdef::status[]
-image:https://img.shields.io/github/v/release/ccremer/fronius-exporter[Releases,link=https://github.com/ccremer/fronius-exporter/releases]
-image:https://img.shields.io/github/license/ccremer/fronius-exporter[License,link=https://github.com/ccremer/fronius-exporter/blob/master/LICENSE]
+image:https://img.shields.io/github/v/release/chrikoch/fronius-exporter[Releases,link=https://github.com/chrikoch/fronius-exporter/releases]
+image:https://img.shields.io/github/license/chrikoch/fronius-exporter[License,link=https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE]
 endif::[]
 
 == About
@@ -31,14 +33,14 @@ image::examples/grafana.png[Grafana]
 
 === Binary
 
-. Download latest binary from the https://github.com/ccremer/fronius-exporter/releases[Releases page]
+. Download latest binary from the https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE[Releases page]
 . `chmod +x fronius-exporter && mv fronius-exporter /usr/local/bin/`
 
 === Package
 
 Comes with systemd unit file.
 
-. Download latest package from the https://github.com/ccremer/fronius-exporter/releases[Releases page]
+. Download latest package from the https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE[Releases page]
 . `sudo dpkg -i fronius-exporter_linux_amd64.deb` (Debian/Ubuntu)
 . `sudo rpm -i fronius-exporter_linux_amd64.rpm` (CentOS)
 . `sudo systemctl daemon-reload`
@@ -48,7 +50,7 @@ Comes with systemd unit file.
 
 === Docker
 
-. `docker run -d --name fronius-exporter -p "8080:8080" ghcr.io/ccremer/fronius-exporter --help`
+. `docker run -d --name fronius-exporter -p "8080:8080" ghcr.io/chrikoch/fronius-exporter --help`
 
 === Helm Chart
 
@@ -106,7 +108,7 @@ Platform related builds are handled by `goreleaser`:
 ----
 export GOOS=linux
 export GOARCH=arm64
-export IMAGE_REPOSITORY=ccremer/fronius-exporter
+export IMAGE_REPOSITORY=chrikoch/fronius-exporter
 goreleaser build --snapshot --clean --single-target
 ----
 
@@ -115,7 +117,7 @@ On the other hand you can also use the actual `make build` in combination with `
 ----
 export GOOS=linux
 export GOARCH=arm64
-export IMAGE_REPOSITORY=ccremer/fronius-exporter
+export IMAGE_REPOSITORY=chrikoch/fronius-exporter
 
 make build
 # you now have a binary with arm64 arch
