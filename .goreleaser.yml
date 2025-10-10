@@ -23,10 +23,6 @@ checksum:
 snapshot:
   version_template: "{{ .Tag }}-snapshot"
 
-signs:
-  - artifacts: checksum
-    args: ["-u", "3E0B9A63FF344E7CB445BD84ED35499391B64DB4", "--output", "${signature}", "--detach-sign", "${artifact}"]
-
 dockers:
   - goarch: amd64
     use: buildx
