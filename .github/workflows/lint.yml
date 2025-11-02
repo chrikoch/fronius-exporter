@@ -6,6 +6,9 @@ name: Lint
 on:
   workflow_dispatch: {}
   pull_request: {}
+  push:
+    branches:
+      - '**'
 
 jobs:
   lint:
