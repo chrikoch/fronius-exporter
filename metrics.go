@@ -160,13 +160,13 @@ var (
 func collectMetricsFromTarget(client *fronius.SymoClient) {
 	start := time.Now()
 	log.WithFields(log.Fields{
-		"url":                  client.Options.URL,
-		"timeout":              client.Options.Timeout,
-		"powerFlowEnabled":     client.Options.PowerFlowEnabled,
-		"archiveEnabled":       client.Options.ArchiveEnabled,
-		"inverterRealtime":     client.Options.InverterRealtimeEnabled,
-		"meterRealtime":        client.Options.MeterRealtimeEnabled,
-		"storageRealtime":      client.Options.StorageRealtimeEnabled,
+		"url":              client.Options.URL,
+		"timeout":          client.Options.Timeout,
+		"powerFlowEnabled": client.Options.PowerFlowEnabled,
+		"archiveEnabled":   client.Options.ArchiveEnabled,
+		"inverterRealtime": client.Options.InverterRealtimeEnabled,
+		"meterRealtime":    client.Options.MeterRealtimeEnabled,
+		"storageRealtime":  client.Options.StorageRealtimeEnabled,
 	}).Debug("Requesting data.")
 
 	wg := sync.WaitGroup{}
