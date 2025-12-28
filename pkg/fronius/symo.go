@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -182,6 +184,8 @@ func (c *SymoClient) GetPowerFlowData() (*SymoData, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Tracef("Starting GetPowerFlowData request to %s", u.String())
+	start := time.Now()
 
 	c.request.URL = u
 	client := http.DefaultClient
@@ -191,6 +195,7 @@ func (c *SymoClient) GetPowerFlowData() (*SymoData, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
+	log.Tracef("GetPowerFlowData request completed in %v", time.Since(start))
 	p := symoPowerFlow{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
@@ -205,7 +210,8 @@ func (c *SymoClient) GetInverterRealtimeData() (*SymoInverterRealtimeData, error
 	if err != nil {
 		return nil, err
 	}
-
+	log.Tracef("Starting GetInverterRealtimeData request to %s", u.String())
+	start := time.Now()
 	c.request.URL = u
 	client := http.DefaultClient
 	client.Timeout = c.Options.Timeout
@@ -214,6 +220,7 @@ func (c *SymoClient) GetInverterRealtimeData() (*SymoInverterRealtimeData, error
 		return nil, err
 	}
 	defer response.Body.Close()
+	log.Tracef("GetInverterRealtimeData request completed in %v", time.Since(start))
 	p := symoInverterRealtime{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
@@ -228,7 +235,8 @@ func (c *SymoClient) GetMeterRealtimeData() (*SymoMeterRealtimeData, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Tracef("Starting GetMeterRealtimeData request to %s", u.String())
+	start := time.Now()
 	c.request.URL = u
 	client := http.DefaultClient
 	client.Timeout = c.Options.Timeout
@@ -237,6 +245,7 @@ func (c *SymoClient) GetMeterRealtimeData() (*SymoMeterRealtimeData, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
+	log.Tracef("GetMeterRealtimeData request completed in %v", time.Since(start))
 	p := symoMeter{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
@@ -252,7 +261,8 @@ func (c *SymoClient) GetStorageRealtimeData() (*SymoStorageRealtimeData, error) 
 	if err != nil {
 		return nil, err
 	}
-
+	log.Tracef("Starting GetStorageRealtimeData request to %s", u.String())
+	start := time.Now()
 	c.request.URL = u
 	client := http.DefaultClient
 	client.Timeout = c.Options.Timeout
@@ -261,6 +271,7 @@ func (c *SymoClient) GetStorageRealtimeData() (*SymoStorageRealtimeData, error) 
 		return nil, err
 	}
 	defer response.Body.Close()
+	log.Tracef("GetStorageRealtimeData request completed in %v", time.Since(start))
 	p := symoStorageRealtime{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
@@ -289,12 +300,15 @@ func (c *SymoClient) GetArchiveData() (map[string]InverterArchive, error) {
 		time.Now().Truncate(5*time.Minute).UTC().Local().Format(time.RFC3339),
 		time.Now().Add(5*time.Minute).Truncate(5*time.Minute).UTC().Local().Format(time.RFC3339))
 
+	log.Tracef("Starting GetArchiveData request to %s", c.request.URL.String())
+	start := time.Now()
 	response, err := client.Do(c.request)
 
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
+	log.Tracef("GetArchiveData request completed in %v", time.Since(start))
 	p := symoArchive{}
 	err = json.NewDecoder(response.Body).Decode(&p)
 	if err != nil {
