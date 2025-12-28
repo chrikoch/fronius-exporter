@@ -23,6 +23,11 @@ var (
 		Name:      "scrape_error_count",
 		Help:      "Number of scrape errors",
 	})
+	apiRequestDurationGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "api_request_duration_seconds",
+		Help:      "Duration of individual Fronius API requests in seconds",
+	}, []string{"endpoint"})
 
 	inverterPowerGaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
@@ -188,7 +193,9 @@ func collectMetricsFromTarget(client *fronius.SymoClient) {
 func collectPowerFlowData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	defer w.Done()
 	if client.Options.PowerFlowEnabled {
+		start := time.Now()
 		powerFlowData, err := client.GetPowerFlowData()
+		apiRequestDurationGauge.WithLabelValues("power_flow").Set(time.Since(start).Seconds())
 		if err != nil {
 			log.WithError(err).Warn("Could not collect Symo power metrics.")
 			scrapeErrorCount.Add(1)
@@ -201,7 +208,9 @@ func collectPowerFlowData(client *fronius.SymoClient, w *sync.WaitGroup) {
 func collectInverterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	defer w.Done()
 	if client.Options.InverterRealtimeEnabled {
+		start := time.Now()
 		powerFlowData, err := client.GetInverterRealtimeData()
+		apiRequestDurationGauge.WithLabelValues("inverter_realtime").Set(time.Since(start).Seconds())
 		if err != nil {
 			log.WithError(err).Warn("Could not collect Symo inverter realtime metrics.")
 			scrapeErrorCount.Add(1)
@@ -214,7 +223,9 @@ func collectInverterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) 
 func collectMeterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	defer w.Done()
 	if client.Options.MeterRealtimeEnabled {
+		start := time.Now()
 		meterData, err := client.GetMeterRealtimeData()
+		apiRequestDurationGauge.WithLabelValues("meter_realtime").Set(time.Since(start).Seconds())
 		if err != nil {
 			log.WithError(err).Warn("Could not collect Symo meter realtime metrics.")
 			scrapeErrorCount.Add(1)
@@ -227,7 +238,9 @@ func collectMeterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 func collectStorageRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	defer w.Done()
 	if client.Options.StorageRealtimeEnabled {
+		start := time.Now()
 		storageData, err := client.GetStorageRealtimeData()
+		apiRequestDurationGauge.WithLabelValues("storage_realtime").Set(time.Since(start).Seconds())
 		if err != nil {
 			log.WithError(err).Warn("Could not collect Symo storage realtime metrics.")
 			scrapeErrorCount.Add(1)
@@ -240,7 +253,9 @@ func collectStorageRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 func collectArchiveData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	defer w.Done()
 	if client.Options.ArchiveEnabled {
+		start := time.Now()
 		archiveData, err := client.GetArchiveData()
+		apiRequestDurationGauge.WithLabelValues("archive").Set(time.Since(start).Seconds())
 		if err != nil {
 			log.WithError(err).Warn("Could not collect Symo archive metrics.")
 			scrapeErrorCount.Add(1)
