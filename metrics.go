@@ -172,11 +172,13 @@ func collectMetricsFromTarget(client *fronius.SymoClient) {
 	wg := sync.WaitGroup{}
 	wg.Add(5)
 
-	collectPowerFlowData(client, &wg)
-	collectArchiveData(client, &wg)
-	collectInverterRealtimeData(client, &wg)
-	collectMeterRealtimeData(client, &wg)
-	collectStorageRealtimeData(client, &wg)
+	//run the requests in parallel, so that we don't have to wait for each request to finish
+	//this enables the usage of longer timeouts for each request
+	go collectPowerFlowData(client, &wg)
+	go collectArchiveData(client, &wg)
+	go collectInverterRealtimeData(client, &wg)
+	go collectMeterRealtimeData(client, &wg)
+	go collectStorageRealtimeData(client, &wg)
 
 	wg.Wait()
 	elapsed := time.Since(start)
