@@ -42,6 +42,7 @@ func setupCliFlags(version string, fs *flag.FlagSet, config *Configuration) {
 	fs.StringP("symo.url", "u", config.Symo.URL, "Target base URL of Fronius Symo device.")
 	fs.Int64("symo.timeout", int64(config.Symo.Timeout.Seconds()),
 		"Timeout in seconds when collecting metrics from Fronius Symo. Should not be larger than the scrape interval.")
+	fs.String("symo.request-mode", config.Symo.RequestMode, "Request mode for Fronius API calls. Supported values: sequential, parallel.")
 	fs.Bool("symo.enable-power-flow", config.Symo.PowerFlowEnabled, "Enable/disable scraping of power flow data")
 	fs.Bool("symo.enable-archive", config.Symo.ArchiveEnabled, "Enable/disable scraping of archive data")
 	fs.Bool("symo.enable-inverter-realtime", config.Symo.InverterRealtimeEnabled, "Enable/disable scraping of inverter real time data")
@@ -60,6 +61,11 @@ func postLoadProcess(config *Configuration) {
 		parsedHeaders = splitHeaderStrings(header, parsedHeaders)
 	}
 	config.Symo.Headers = parsedHeaders
+	config.Symo.RequestMode = strings.ToLower(strings.TrimSpace(config.Symo.RequestMode))
+	if config.Symo.RequestMode != "sequential" && config.Symo.RequestMode != "parallel" {
+		log.WithField("symo.request-mode", config.Symo.RequestMode).Warn("Unsupported request mode, falling back to sequential")
+		config.Symo.RequestMode = "sequential"
+	}
 
 	level, err := log.ParseLevel(config.Log.Level)
 	if err != nil {

@@ -88,6 +88,17 @@ SYMO__URL=http://... fronius-exporter
 ----
 ====
 
+Fronius API request mode can be configured:
+
+* `--symo.request-mode=sequential` (default)
+* `--symo.request-mode=parallel`
+
+Environment variable equivalent:
+
+----
+SYMO__REQUEST_MODE=parallel fronius-exporter
+----
+
 == As a client API
 
 See link:examples/client.go[Example]

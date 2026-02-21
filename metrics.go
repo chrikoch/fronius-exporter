@@ -11,6 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type collectorFunc func(*fronius.SymoClient)
+
 var (
 	namespace           = "fronius"
 	scrapeDurationGauge = promauto.NewGauge(prometheus.GaugeOpts{
@@ -172,26 +174,40 @@ func collectMetricsFromTarget(client *fronius.SymoClient) {
 		"inverterRealtime": client.Options.InverterRealtimeEnabled,
 		"meterRealtime":    client.Options.MeterRealtimeEnabled,
 		"storageRealtime":  client.Options.StorageRealtimeEnabled,
+		"requestMode":      client.Options.RequestMode,
 	}).Debug("Requesting data.")
 
-	wg := sync.WaitGroup{}
-	wg.Add(5)
-
-	//run the requests in parallel, so that we don't have to wait for each request to finish
-	//this enables the usage of longer timeouts for each request
-	go collectPowerFlowData(client, &wg)
-	go collectArchiveData(client, &wg)
-	go collectInverterRealtimeData(client, &wg)
-	go collectMeterRealtimeData(client, &wg)
-	go collectStorageRealtimeData(client, &wg)
-
-	wg.Wait()
+	runCollectors(client, client.Options.RequestMode, []collectorFunc{
+		collectPowerFlowData,
+		collectArchiveData,
+		collectInverterRealtimeData,
+		collectMeterRealtimeData,
+		collectStorageRealtimeData,
+	})
 	elapsed := time.Since(start)
 	scrapeDurationGauge.Set(elapsed.Seconds())
 }
 
-func collectPowerFlowData(client *fronius.SymoClient, w *sync.WaitGroup) {
-	defer w.Done()
+func runCollectors(client *fronius.SymoClient, requestMode string, collectors []collectorFunc) {
+	if requestMode == "parallel" {
+		wg := sync.WaitGroup{}
+		wg.Add(len(collectors))
+		for _, collector := range collectors {
+			go func(c collectorFunc) {
+				defer wg.Done()
+				c(client)
+			}(collector)
+		}
+		wg.Wait()
+		return
+	}
+
+	for _, collector := range collectors {
+		collector(client)
+	}
+}
+
+func collectPowerFlowData(client *fronius.SymoClient) {
 	if client.Options.PowerFlowEnabled {
 		start := time.Now()
 		powerFlowData, err := client.GetPowerFlowData()
@@ -205,8 +221,7 @@ func collectPowerFlowData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	}
 }
 
-func collectInverterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
-	defer w.Done()
+func collectInverterRealtimeData(client *fronius.SymoClient) {
 	if client.Options.InverterRealtimeEnabled {
 		start := time.Now()
 		powerFlowData, err := client.GetInverterRealtimeData()
@@ -220,8 +235,7 @@ func collectInverterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) 
 	}
 }
 
-func collectMeterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
-	defer w.Done()
+func collectMeterRealtimeData(client *fronius.SymoClient) {
 	if client.Options.MeterRealtimeEnabled {
 		start := time.Now()
 		meterData, err := client.GetMeterRealtimeData()
@@ -235,8 +249,7 @@ func collectMeterRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	}
 }
 
-func collectStorageRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
-	defer w.Done()
+func collectStorageRealtimeData(client *fronius.SymoClient) {
 	if client.Options.StorageRealtimeEnabled {
 		start := time.Now()
 		storageData, err := client.GetStorageRealtimeData()
@@ -250,8 +263,7 @@ func collectStorageRealtimeData(client *fronius.SymoClient, w *sync.WaitGroup) {
 	}
 }
 
-func collectArchiveData(client *fronius.SymoClient, w *sync.WaitGroup) {
-	defer w.Done()
+func collectArchiveData(client *fronius.SymoClient) {
 	if client.Options.ArchiveEnabled {
 		start := time.Now()
 		archiveData, err := client.GetArchiveData()

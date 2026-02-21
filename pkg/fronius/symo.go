@@ -160,6 +160,7 @@ type (
 		URL                     string
 		Headers                 http.Header
 		Timeout                 time.Duration
+		RequestMode             string
 		PowerFlowEnabled        bool
 		ArchiveEnabled          bool
 		InverterRealtimeEnabled bool

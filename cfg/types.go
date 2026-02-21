@@ -19,6 +19,7 @@ type (
 		URL                     string        `koanf:"url"`
 		Timeout                 time.Duration `koanf:"timeout"`
 		Headers                 []string      `koanf:"header"`
+		RequestMode             string        `koanf:"request-mode"`
 		PowerFlowEnabled        bool          `koanf:"enable-power-flow"`
 		ArchiveEnabled          bool          `koanf:"enable-archive"`
 		InverterRealtimeEnabled bool          `koanf:"enable-inverter-realtime"`
@@ -37,6 +38,7 @@ func NewDefaultConfig() *Configuration {
 			URL:                     "http://symo.ip.or.hostname",
 			Timeout:                 5 * time.Second,
 			Headers:                 []string{},
+			RequestMode:             "sequential",
 			PowerFlowEnabled:        true,
 			ArchiveEnabled:          true,
 			InverterRealtimeEnabled: true,

@@ -76,6 +76,7 @@ func TestParseConfig(t *testing.T) {
 			args: []string{},
 			verify: func(c *Configuration) {
 				assert.Equal(t, "info", c.Log.Level)
+				assert.Equal(t, "sequential", c.Symo.RequestMode)
 			},
 		},
 		"GivenLogFlags_WhenVerboseEnabled_ThenSetLoggingLevelToDebug": {
@@ -145,6 +146,35 @@ func TestParseConfig(t *testing.T) {
 			args: []string{"--symo.timeout", "3"},
 			verify: func(c *Configuration) {
 				assert.Equal(t, 3*time.Second, c.Symo.Timeout)
+			},
+		},
+		"GivenRequestModeFlag_WhenSpecified_ThenOverrideDefault": {
+			args: []string{"--symo.request-mode", "parallel"},
+			verify: func(c *Configuration) {
+				assert.Equal(t, "parallel", c.Symo.RequestMode)
+			},
+		},
+		"GivenRequestModeEnv_WhenSpecified_ThenOverrideDefault": {
+			envs: map[string]string{
+				"SYMO__REQUEST_MODE": "parallel",
+			},
+			verify: func(c *Configuration) {
+				assert.Equal(t, "parallel", c.Symo.RequestMode)
+			},
+		},
+		"GivenRequestModeEnvAndFlag_WhenBothSpecified_ThenTakeCliPrecedence": {
+			envs: map[string]string{
+				"SYMO__REQUEST_MODE": "parallel",
+			},
+			args: []string{"--symo.request-mode", "sequential"},
+			verify: func(c *Configuration) {
+				assert.Equal(t, "sequential", c.Symo.RequestMode)
+			},
+		},
+		"GivenRequestMode_WhenInvalid_ThenFallBackToSequential": {
+			args: []string{"--symo.request-mode", "invalid"},
+			verify: func(c *Configuration) {
+				assert.Equal(t, "sequential", c.Symo.RequestMode)
 			},
 		},
 	}

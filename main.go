@@ -38,6 +38,7 @@ func main() {
 		URL:                     config.Symo.URL,
 		Headers:                 headers,
 		Timeout:                 config.Symo.Timeout,
+		RequestMode:             config.Symo.RequestMode,
 		PowerFlowEnabled:        config.Symo.PowerFlowEnabled,
 		ArchiveEnabled:          config.Symo.ArchiveEnabled,
 		InverterRealtimeEnabled: config.Symo.InverterRealtimeEnabled,
