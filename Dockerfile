@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.23 as runtime
+FROM docker.io/library/alpine:3.24 as runtime
 
 ENTRYPOINT ["fronius-exporter"]
 
