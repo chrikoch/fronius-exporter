@@ -1,70 +1,56 @@
-ifndef::env-github[:icons: font]
-ifdef::env-github[]
-:status:
-:tip-caption: :bulb:
-:note-caption: :information_source:
-:important-caption: :heavy_exclamation_mark:
-:caution-caption: :fire:
-:warning-caption: :warning:
-:ext-relative: {outfilesuffix}
-endif::[]
-
-= Project Status
+# Project Status
 
 This is a fork of https://github.com/ccremer/fronius-exporter I forked it for my personal use, because the original project is looking for a maintainer which makes it harder to provide merge requests. Once the issue is resolved, I'm happingly adding my changes to the original project!
 
 See https://github.com/ccremer/fronius-exporter/issues/134
 
-= Fronius Exporter
+# Fronius Exporter
 
-ifdef::status[]
-image:https://img.shields.io/github/v/release/chrikoch/fronius-exporter[Releases,link=https://github.com/chrikoch/fronius-exporter/releases]
-image:https://img.shields.io/github/license/chrikoch/fronius-exporter[License,link=https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE]
-endif::[]
+[![Releases](https://img.shields.io/github/v/release/chrikoch/fronius-exporter)](https://github.com/chrikoch/fronius-exporter/releases)
+[![License](https://img.shields.io/github/license/chrikoch/fronius-exporter)](https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE)
 
-== About
+## About
 
 Scrapes a Fronius Photovoltaic power installation and converts sensor data to Prometheus metrics.
 It has been tested with Fronius Symo 8.2-3-M (Software version 3.14.1-10).
 
-image::examples/grafana.png[Grafana]
+![Grafana](examples/grafana.png)
 
-== Installing
+## Installing
 
-=== Binary
+### Binary
 
-. Download latest binary from the https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE[Releases page]
-. `chmod +x fronius-exporter && mv fronius-exporter /usr/local/bin/`
+1. Download latest binary from the [Releases page](https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE)
+1. `chmod +x fronius-exporter && mv fronius-exporter /usr/local/bin/`
 
-=== Package
+### Package
 
 Comes with systemd unit file.
 
-. Download latest package from the https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE[Releases page]
-. `sudo dpkg -i fronius-exporter_linux_amd64.deb` (Debian/Ubuntu)
-. `sudo rpm -i fronius-exporter_linux_amd64.rpm` (CentOS)
-. `sudo systemctl daemon-reload`
-. Edit the settings in `/etc/default/fronius-exporter`
-. `sudo systemctl enable fronius-exporter`
-. `sudo systemctl restart fronius-exporter`
+1. Download latest package from the [Releases page](https://github.com/chrikoch/fronius-exporter/blob/master/LICENSE)
+1. `sudo dpkg -i fronius-exporter_linux_amd64.deb` (Debian/Ubuntu)
+1. `sudo rpm -i fronius-exporter_linux_amd64.rpm` (CentOS)
+1. `sudo systemctl daemon-reload`
+1. Edit the settings in `/etc/default/fronius-exporter`
+1. `sudo systemctl enable fronius-exporter`
+1. `sudo systemctl restart fronius-exporter`
 
-=== Docker
+### Docker
 
-. `docker run -d --name fronius-exporter -p "8080:8080" ghcr.io/chrikoch/fronius-exporter --help`
+1. `docker run -d --name fronius-exporter -p "8080:8080" ghcr.io/chrikoch/fronius-exporter --help`
 
-=== Helm Chart
+### Helm Chart
 
-With https://ccremer.github.io/charts/fronius-exporter[fronius-exporter]
+With [fronius-exporter](https://ccremer.github.io/charts/fronius-exporter)
 
-. `helm repo add ccremer https://ccremer.github.io/charts`
-. `helm install fronius ccremer/fronius-exporter`
+1. `helm repo add ccremer https://ccremer.github.io/charts`
+1. `helm install fronius ccremer/fronius-exporter`
 
-== Usage
+## Usage
 
-[source,console]
-----
+```console
 fronius-exporter --symo.url http://symo.ip.or.hostname
-----
+```
 
 Upon each call to `/metrics`, the exporter will do a GET request on the given URL, and translate the JSON response to Prometheus metrics format.
 
@@ -73,25 +59,22 @@ When meter real-time collection is enabled with `--symo.enable-meter-realtime`,
 phase-to-neutral voltages in volts, labeled `phase="1"`, `"2"`, or `"3"`.
 Phases absent from the meter response are omitted.
 
-== Configuration
+## Configuration
 
 `fronius-exporter` can be configured with CLI flags.
 Call the binary with `--help` to get a list of options.
 
-[TIP]
-====
-All flags are also configurable with Environment variables.
+**Tip:** All flags are also configurable with environment variables.
 
 * Replace the `-` char with `_` in the names and uppercase the names
 * Replace the `.` delimiter with `__`
 * CLI flags take precedence
 
-.Following calls are equivalent
-----
+Following calls are equivalent:
+```
 fronius-exporter --symo.url http://...
 SYMO__URL=http://... fronius-exporter
-----
-====
+```
 
 Fronius API request mode can be configured:
 
@@ -100,37 +83,37 @@ Fronius API request mode can be configured:
 
 Environment variable equivalent:
 
-----
+```
 SYMO__REQUEST_MODE=parallel fronius-exporter
-----
+```
 
-== As a client API
+## As a client API
 
-See link:examples/client.go[Example]
+See [Example](examples/client.go)
 
-== Developing
+## Developing
 
-=== Requirements
+### Requirements
 
 * Go
 * Docker
 
-=== Building
+### Building
 
 Run `make help` to see available goals
 
 Platform related builds are handled by `goreleaser`:
 
-----
+```
 export GOOS=linux
 export GOARCH=arm64
 export IMAGE_REPOSITORY=chrikoch/fronius-exporter
 goreleaser build --snapshot --clean --single-target
-----
+```
 
 On the other hand you can also use the actual `make build` in combination with `docker buildx`
 
-----
+```
 export GOOS=linux
 export GOARCH=arm64
 export IMAGE_REPOSITORY=chrikoch/fronius-exporter
@@ -139,14 +122,13 @@ make build
 # you now have a binary with arm64 arch
 
 docker buildx build --platform linux/arm64 -t $IMAGE_REPOSITORY --push .
-----
+```
 
-=== Test metrics
+### Test metrics
 
 If you don't have a Symo device at hand, you can fake one:
 
-[source,console]
-----
+```console
 # In its own terminal
 python3 -m http.server 8081
 
@@ -155,4 +137,4 @@ go run . -v --symo.url http://localhost:8081/pkg/fronius/testdata/example_1.json
 
 # Yet another terminal or browser
 curl -L http://localhost:8080/metrics
-----
+```
