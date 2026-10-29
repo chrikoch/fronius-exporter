@@ -93,48 +93,4 @@ See [Example](examples/client.go)
 
 ## Developing
 
-### Requirements
-
-* Go
-* Docker
-
-### Building
-
-Run `make help` to see available goals
-
-Platform related builds are handled by `goreleaser`:
-
-```
-export GOOS=linux
-export GOARCH=arm64
-export IMAGE_REPOSITORY=chrikoch/fronius-exporter
-goreleaser build --snapshot --clean --single-target
-```
-
-On the other hand you can also use the actual `make build` in combination with `docker buildx`
-
-```
-export GOOS=linux
-export GOARCH=arm64
-export IMAGE_REPOSITORY=chrikoch/fronius-exporter
-
-make build
-# you now have a binary with arm64 arch
-
-docker buildx build --platform linux/arm64 -t $IMAGE_REPOSITORY --push .
-```
-
-### Test metrics
-
-If you don't have a Symo device at hand, you can fake one:
-
-```console
-# In its own terminal
-python3 -m http.server 8081
-
-# In another terminal
-go run . -v --symo.url http://localhost:8081/pkg/fronius/testdata/example_1.json
-
-# Yet another terminal or browser
-curl -L http://localhost:8080/metrics
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md#developing) for development instructions.
