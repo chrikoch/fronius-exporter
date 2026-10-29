@@ -70,15 +70,16 @@ func main() {
 		}).Debug("Accessed Liveness endpoint")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		log.WithFields(log.Fields{
-			"uri":    r.RequestURI,
-			"client": r.RemoteAddr,
-		}).Debug("Accessed Metrics endpoint")
-		collectMetricsFromTarget(symoClient)
-		promHandler.ServeHTTP(w, r)
-	})
+	http.Handle("/metrics", metricsHandler(symoClient))
 
 	log.WithField("port", config.BindAddr).Info("Listening for scrapes.")
 	log.WithError(http.ListenAndServe(config.BindAddr, nil)).Fatal("Shutting down.")
+}
+
+func metricsHandler(client *fronius.SymoClient) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.WithFields(log.Fields{"uri": r.RequestURI, "client": r.RemoteAddr}).Debug("Accessed Metrics endpoint")
+		collectMetricsFromTarget(client)
+		promHandler.ServeHTTP(w, r)
+	})
 }

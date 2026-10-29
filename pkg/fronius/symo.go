@@ -192,10 +192,11 @@ func (c *SymoClient) GetPowerFlowData() (*SymoData, error) {
 	log.Tracef("Starting GetPowerFlowData request to %s", u.String())
 	start := time.Now()
 
-	c.request.URL = u
-	client := http.DefaultClient
+	request := c.request.Clone(c.request.Context())
+	request.URL = u
+	client := *http.DefaultClient
 	client.Timeout = c.Options.Timeout
-	response, err := client.Do(c.request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -217,10 +218,11 @@ func (c *SymoClient) GetInverterRealtimeData() (*SymoInverterRealtimeData, error
 	}
 	log.Tracef("Starting GetInverterRealtimeData request to %s", u.String())
 	start := time.Now()
-	c.request.URL = u
-	client := http.DefaultClient
+	request := c.request.Clone(c.request.Context())
+	request.URL = u
+	client := *http.DefaultClient
 	client.Timeout = c.Options.Timeout
-	response, err := client.Do(c.request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -242,10 +244,11 @@ func (c *SymoClient) GetMeterRealtimeData() (*SymoMeterRealtimeData, error) {
 	}
 	log.Tracef("Starting GetMeterRealtimeData request to %s", u.String())
 	start := time.Now()
-	c.request.URL = u
-	client := http.DefaultClient
+	request := c.request.Clone(c.request.Context())
+	request.URL = u
+	client := *http.DefaultClient
 	client.Timeout = c.Options.Timeout
-	response, err := client.Do(c.request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -272,10 +275,11 @@ func (c *SymoClient) GetStorageRealtimeData() (*SymoStorageRealtimeData, error) 
 	}
 	log.Tracef("Starting GetStorageRealtimeData request to %s", u.String())
 	start := time.Now()
-	c.request.URL = u
-	client := http.DefaultClient
+	request := c.request.Clone(c.request.Context())
+	request.URL = u
+	client := *http.DefaultClient
 	client.Timeout = c.Options.Timeout
-	response, err := client.Do(c.request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -297,21 +301,22 @@ func (c *SymoClient) GetArchiveData() (map[string]InverterArchive, error) {
 		return nil, err
 	}
 
-	c.request.URL = u
-	client := http.DefaultClient
+	request := c.request.Clone(c.request.Context())
+	request.URL = u
+	client := *http.DefaultClient
 	client.Timeout = c.Options.Timeout
-	q := c.request.URL.Query()
+	q := request.URL.Query()
 	q.Del("StartDate")
 	q.Del("EndDate")
 
-	c.request.URL.RawQuery = fmt.Sprintf("%s&StartDate=%s&EndDate=%s",
+	request.URL.RawQuery = fmt.Sprintf("%s&StartDate=%s&EndDate=%s",
 		q.Encode(),
 		time.Now().Truncate(5*time.Minute).UTC().Local().Format(time.RFC3339),
 		time.Now().Add(5*time.Minute).Truncate(5*time.Minute).UTC().Local().Format(time.RFC3339))
 
-	log.Tracef("Starting GetArchiveData request to %s", c.request.URL.String())
+	log.Tracef("Starting GetArchiveData request to %s", request.URL.String())
 	start := time.Now()
-	response, err := client.Do(c.request)
+	response, err := client.Do(request)
 
 	if err != nil {
 		return nil, err
