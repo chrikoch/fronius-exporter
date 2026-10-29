@@ -157,6 +157,11 @@ var (
 		Name:      "site_meter_real_time_data_energy_real_wac_sum_consumed",
 		Help:      "Site meter real time data energy real WAC sum consumed in Wh",
 	})
+	siteMeterVoltageGaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "site_meter_voltage_volts",
+		Help:      "Grid connection point phase voltage in volts.",
+	}, []string{"phase"})
 	siteStorageRealTimeDataTemperatureCell = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "site_storage_real_time_data_temperature_cell",
@@ -321,6 +326,14 @@ func parseMeterRealtimeData(data *fronius.SymoMeterRealtimeData) {
 	log.WithField("MeterRealtimeData", *data).Debug("Parsing data.")
 	siteMeterRealTimeDataEnergyReal_WAC_Sum_Consumed.Set(data.EnergyReal_WAC_Sum_Consumed)
 	siteMeterRealTimeDataEnergyReal_WAC_Sum_Produced.Set(data.EnergyReal_WAC_Sum_Produced)
+	for i, voltage := range []*float64{data.VoltageACPhase1, data.VoltageACPhase2, data.VoltageACPhase3} {
+		phase := string(rune('1' + i))
+		if voltage == nil {
+			siteMeterVoltageGaugeVec.DeleteLabelValues(phase)
+		} else {
+			siteMeterVoltageGaugeVec.WithLabelValues(phase).Set(*voltage)
+		}
+	}
 }
 
 func parseStorageRealtimeData(data *fronius.SymoStorageRealtimeData) {

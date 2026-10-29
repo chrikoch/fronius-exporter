@@ -68,6 +68,11 @@ fronius-exporter --symo.url http://symo.ip.or.hostname
 
 Upon each call to `/metrics`, the exporter will do a GET request on the given URL, and translate the JSON response to Prometheus metrics format.
 
+When meter real-time collection is enabled with `--symo.enable-meter-realtime`,
+`fronius_site_meter_voltage_volts` reports the grid connection point smart meter's
+phase-to-neutral voltages in volts, labeled `phase="1"`, `"2"`, or `"3"`.
+Phases absent from the meter response are omitted.
+
 == Configuration
 
 `fronius-exporter` can be configured with CLI flags.

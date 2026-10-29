@@ -1,14 +1,46 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/ccremer/fronius-exporter/pkg/fronius"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestMeterVoltageMetrics(t *testing.T) {
+	body := `{"Body":{"Data":{"0":{"Meter_Location_Current":0,"Voltage_AC_Phase_1":232.1,"Voltage_AC_Phase_2":229.3,"Voltage_AC_Phase_3":234.9}}}}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(body)) }))
+	defer server.Close()
+	client, err := fronius.NewSymoClient(fronius.ClientOptions{URL: server.URL, MeterRealtimeEnabled: true})
+	require.NoError(t, err)
+	collectMeterRealtimeData(client)
+	checkMeterVoltages(t, map[string]float64{"1": 232.1, "2": 229.3, "3": 234.9})
+	body = `{"Body":{"Data":{"0":{"Meter_Location_Current":0,"Voltage_AC_Phase_1":0}}}}`
+	collectMeterRealtimeData(client)
+	checkMeterVoltages(t, map[string]float64{"1": 0})
+}
+
+func checkMeterVoltages(t *testing.T, want map[string]float64) {
+	t.Helper()
+	families, err := prometheus.DefaultGatherer.Gather()
+	require.NoError(t, err)
+	got := map[string]float64{}
+	for _, family := range families {
+		if family.GetName() == "fronius_site_meter_voltage_volts" {
+			for _, metric := range family.Metric {
+				got[metric.Label[0].GetValue()] = metric.Gauge.GetValue()
+			}
+		}
+	}
+	assert.Equal(t, want, got)
+}
 
 func TestRunCollectors_WhenSequential_ThenRunsInOrderWithoutOverlap(t *testing.T) {
 	client := &fronius.SymoClient{}

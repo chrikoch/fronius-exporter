@@ -124,6 +124,9 @@ type (
 
 	SymoMeterRealtimeData struct {
 		MeterLocationCurrent        *float64 `json:"Meter_Location_Current"`
+		VoltageACPhase1             *float64 `json:"Voltage_AC_Phase_1"`
+		VoltageACPhase2             *float64 `json:"Voltage_AC_Phase_2"`
+		VoltageACPhase3             *float64 `json:"Voltage_AC_Phase_3"`
 		EnergyReal_WAC_Sum_Produced float64  `json:"EnergyReal_WAC_Sum_Produced"`
 		EnergyReal_WAC_Sum_Consumed float64  `json:"EnergyReal_WAC_Sum_Consumed"`
 	}
