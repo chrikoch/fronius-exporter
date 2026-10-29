@@ -18,7 +18,7 @@ const (
 	// InverterRealtimeDataPath is the Fronius API URL-path for inverter real time data
 	InverterRealtimeDataPath = "/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData"
 	// get the current meter data
-	MeterRealtimeDataPath = "/solar_api/v1/GetMeterRealtimeData.cgi"
+	MeterRealtimeDataPath = "/solar_api/v1/GetMeterRealtimeData.cgi?Scope=System"
 	// get the current storage data
 	StorageRealtimeDataPath = "/solar_api/v1/GetStorageRealtimeData.cgi?Scope=System"
 )
@@ -123,8 +123,9 @@ type (
 	}
 
 	SymoMeterRealtimeData struct {
-		EnergyReal_WAC_Sum_Produced float64 `json:"EnergyReal_WAC_Sum_Produced"`
-		EnergyReal_WAC_Sum_Consumed float64 `json:"EnergyReal_WAC_Sum_Consumed"`
+		MeterLocationCurrent        *float64 `json:"Meter_Location_Current"`
+		EnergyReal_WAC_Sum_Produced float64  `json:"EnergyReal_WAC_Sum_Produced"`
+		EnergyReal_WAC_Sum_Consumed float64  `json:"EnergyReal_WAC_Sum_Consumed"`
 	}
 
 	// SymoArchive holds the parsed archive data from Symo API
@@ -252,8 +253,12 @@ func (c *SymoClient) GetMeterRealtimeData() (*SymoMeterRealtimeData, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := p.Body.Data["0"]
-	return &data, nil
+	for _, data := range p.Body.Data {
+		if data.MeterLocationCurrent != nil && *data.MeterLocationCurrent == 0 {
+			return &data, nil
+		}
+	}
+	return nil, fmt.Errorf("no meter at the grid connection point found")
 }
 
 // GetStorageRealtimeData returns the parsed data from the Symo device.

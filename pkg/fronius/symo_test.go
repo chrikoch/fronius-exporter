@@ -128,6 +128,31 @@ func Test_Symo_GetMeterRealtimeData_GivenUrl_WhenRequestData_ThenParseStruct(t *
 	assert.Equal(t, float64(7654.32), p.EnergyReal_WAC_Sum_Consumed)
 }
 
+func TestGetMeterRealtimeDataSelectsGridMeter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"Body":{"Data":{"0":{"Meter_Location_Current":1,"EnergyReal_WAC_Sum_Produced":10},"5":{"Meter_Location_Current":0,"EnergyReal_WAC_Sum_Produced":20}}}}`))
+	}))
+	defer server.Close()
+	client, err := NewSymoClient(ClientOptions{URL: server.URL})
+	require.NoError(t, err)
+	data, err := client.GetMeterRealtimeData()
+	require.NoError(t, err)
+	assert.Equal(t, float64(20), data.EnergyReal_WAC_Sum_Produced)
+}
+
+func TestGetMeterRealtimeDataRejectsMissingGridMeter(t *testing.T) {
+	for _, body := range []string{`{"Body":{"Data":{"0":{"EnergyReal_WAC_Sum_Produced":10}}}}`, `{"Body":{"Data":{"0":{"Meter_Location_Current":1}}}}`, `{"Body":{"Data":{}}}`} {
+		t.Run(body, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(body)) }))
+			defer server.Close()
+			client, err := NewSymoClient(ClientOptions{URL: server.URL})
+			require.NoError(t, err)
+			_, err = client.GetMeterRealtimeData()
+			require.Error(t, err)
+		})
+	}
+}
+
 func Test_Symo_GetStorageRealtimeData_GivenUrl_WhenRequestData_ThenParseStruct(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		payload, err := os.ReadFile("testdata/storagerealtimedata.json")
