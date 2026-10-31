@@ -1,10 +1,12 @@
 package fronius
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -170,4 +172,23 @@ func Test_Symo_GetStorageRealtimeData_GivenUrl_WhenRequestData_ThenParseStruct(t
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
 	assert.Equal(t, 30.5, p.Controller.Temperature_Cell)
+}
+
+func TestMeterTimestampDoesNotBreakDecoding(t *testing.T) {
+	for _, timestamp := range []string{"1234567890", "0", `"invalid"`, "null"} {
+		t.Run(timestamp, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprintf(w, `{"Body":{"Data":{"0":{"Meter_Location_Current":0,"Voltage_AC_Phase_1":230,"TimeStamp":%s}}}}`, timestamp)
+			}))
+			defer server.Close()
+			client, err := NewSymoClient(ClientOptions{URL: server.URL, Timeout: time.Second})
+			assert.NoError(t, err)
+			data, err := client.GetMeterRealtimeData()
+			assert.NoError(t, err)
+			if assert.NotNil(t, data) {
+				assert.Equal(t, 230.0, *data.VoltageACPhase1)
+				assert.NotEmpty(t, data.TimeStamp)
+			}
+		})
+	}
 }

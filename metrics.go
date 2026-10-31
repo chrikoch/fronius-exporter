@@ -169,7 +169,7 @@ var (
 	})
 )
 
-func collectMetricsFromTarget(client *fronius.SymoClient) {
+func collectMetricsFromTarget(client *fronius.SymoClient, reporters ...*voltageReporter) {
 	start := time.Now()
 	log.WithFields(log.Fields{
 		"url":              client.Options.URL,
@@ -186,7 +186,7 @@ func collectMetricsFromTarget(client *fronius.SymoClient) {
 		collectPowerFlowData,
 		collectArchiveData,
 		collectInverterRealtimeData,
-		collectMeterRealtimeData,
+		func(client *fronius.SymoClient) { collectMeterRealtimeData(client, reporters...) },
 		collectStorageRealtimeData,
 	})
 	elapsed := time.Since(start)
@@ -240,7 +240,7 @@ func collectInverterRealtimeData(client *fronius.SymoClient) {
 	}
 }
 
-func collectMeterRealtimeData(client *fronius.SymoClient) {
+func collectMeterRealtimeData(client *fronius.SymoClient, reporters ...*voltageReporter) {
 	if client.Options.MeterRealtimeEnabled {
 		start := time.Now()
 		meterData, err := client.GetMeterRealtimeData()
@@ -251,6 +251,9 @@ func collectMeterRealtimeData(client *fronius.SymoClient) {
 			return
 		}
 		parseMeterRealtimeData(meterData)
+		if len(reporters) > 0 && reporters[0] != nil {
+			reporters[0].Observe(meterData, time.Now())
+		}
 	}
 }
 

@@ -51,6 +51,14 @@ func main() {
 	if !config.Symo.ArchiveEnabled && !config.Symo.PowerFlowEnabled && !config.Symo.InverterRealtimeEnabled && !config.Symo.MeterRealtimeEnabled && !config.Symo.StorageRealtimeEnabled {
 		log.Fatal("All scrape endpoints are disabled. You need enable at least one endpoint.")
 	}
+	lat, lon, enabled, err := cfg.ParseOrtsnetzLocation(config.Ortsnetz.Location, config.Symo.MeterRealtimeEnabled)
+	if err != nil {
+		log.WithError(err).Fatal("Invalid Ortsnetz configuration.")
+	}
+	var reporter *voltageReporter
+	if enabled {
+		reporter = newVoltageReporter(lat, lon, &http.Client{Timeout: 10 * time.Second}, ortsnetzURL)
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -70,16 +78,16 @@ func main() {
 		}).Debug("Accessed Liveness endpoint")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	http.Handle("/metrics", metricsHandler(symoClient))
+	http.Handle("/metrics", metricsHandler(symoClient, reporter))
 
 	log.WithField("port", config.BindAddr).Info("Listening for scrapes.")
 	log.WithError(http.ListenAndServe(config.BindAddr, nil)).Fatal("Shutting down.")
 }
 
-func metricsHandler(client *fronius.SymoClient) http.Handler {
+func metricsHandler(client *fronius.SymoClient, reporters ...*voltageReporter) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(log.Fields{"uri": r.RequestURI, "client": r.RemoteAddr}).Debug("Accessed Metrics endpoint")
-		collectMetricsFromTarget(client)
+		collectMetricsFromTarget(client, reporters...)
 		promHandler.ServeHTTP(w, r)
 	})
 }

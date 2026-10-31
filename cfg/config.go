@@ -2,8 +2,10 @@ package cfg
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +37,7 @@ func setupCliFlags(version string, fs *flag.FlagSet, config *Configuration) {
 		fs.PrintDefaults()
 	}
 	fs.String("bind-addr", config.BindAddr, "IP Address to bind to listen for Prometheus scrapes.")
+	fs.String("ortsnetz.location", config.Ortsnetz.Location, "Enable Ortsnetz reporting with latitude,longitude.")
 	fs.String("log.level", config.Log.Level, "Logging level.")
 	fs.BoolP("log.verbose", "v", config.Log.Verbose, "Shortcut for --log.level=debug.")
 	fs.StringSlice("symo.header", config.Symo.Headers,
@@ -48,6 +51,26 @@ func setupCliFlags(version string, fs *flag.FlagSet, config *Configuration) {
 	fs.Bool("symo.enable-inverter-realtime", config.Symo.InverterRealtimeEnabled, "Enable/disable scraping of inverter real time data")
 	fs.Bool("symo.enable-meter-realtime", config.Symo.MeterRealtimeEnabled, "Enable/disable scraping of meter real time data")
 	fs.Bool("symo.enable-storage-realtime", config.Symo.StorageRealtimeEnabled, "Enable/disable scraping of storage real time data")
+}
+
+// ParseOrtsnetzLocation validates the optional reporting location.
+func ParseOrtsnetzLocation(location string, meterEnabled bool) (float64, float64, bool, error) {
+	if strings.TrimSpace(location) == "" {
+		return 0, 0, false, nil
+	}
+	if !meterEnabled {
+		return 0, 0, true, fmt.Errorf("ortsnetz.location requires symo.enable-meter-realtime")
+	}
+	parts := strings.Split(location, ",")
+	if len(parts) != 2 {
+		return 0, 0, true, fmt.Errorf("ortsnetz.location must be latitude,longitude")
+	}
+	lat, errLat := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	lon, errLon := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if errLat != nil || errLon != nil || math.IsNaN(lat) || math.IsNaN(lon) || math.IsInf(lat, 0) || math.IsInf(lon, 0) || math.Abs(lat) > 90 || math.Abs(lon) > 180 {
+		return 0, 0, true, fmt.Errorf("invalid ortsnetz.location: expected valid latitude,longitude")
+	}
+	return lat, lon, true, nil
 }
 
 func postLoadProcess(config *Configuration) {

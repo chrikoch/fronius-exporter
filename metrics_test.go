@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -120,5 +124,63 @@ func updateMax(maxConcurrent *int64, current int64) {
 		if atomic.CompareAndSwapInt64(maxConcurrent, existing, current) {
 			return
 		}
+	}
+}
+
+func TestMeterCollectorReportsFreshGridVoltage(t *testing.T) {
+	now := time.Now().Unix()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"Body":{"Data":{"0":{"Meter_Location_Current":0,"TimeStamp":%d,"Voltage_AC_Phase_1":231}}}}`, now)
+	}))
+	defer server.Close()
+	sent := make(chan map[string]any, 1)
+	reporter := newVoltageReporter(1, 2, &http.Client{Timeout: time.Second, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		var v map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&v)
+		sent <- v
+		return &http.Response{StatusCode: 202, Body: io.NopCloser(strings.NewReader(""))}, nil
+	})}, "http://example.test")
+	client, err := fronius.NewSymoClient(fronius.ClientOptions{URL: server.URL, Timeout: time.Second, MeterRealtimeEnabled: true})
+	require.NoError(t, err)
+	collectMeterRealtimeData(client, reporter)
+	select {
+	case payload := <-sent:
+		require.Equal(t, 231.0, payload["l1_v"])
+	case <-time.After(time.Second):
+		t.Fatal("measurement not sent")
+	}
+}
+
+func TestMetricsHandlerDoesNotWaitForReporting(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"Body":{"Data":{"0":{"Meter_Location_Current":0,"TimeStamp":%d,"Voltage_AC_Phase_1":231}}}}`, time.Now().Unix())
+	}))
+	defer server.Close()
+	started := make(chan struct{})
+	release := make(chan struct{})
+	reporter := newVoltageReporter(1, 2, &http.Client{Timeout: time.Second, Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		close(started)
+		<-release
+		return &http.Response{StatusCode: 202, Body: io.NopCloser(strings.NewReader(""))}, nil
+	})}, "http://example.test")
+	client, err := fronius.NewSymoClient(fronius.ClientOptions{URL: server.URL, Timeout: time.Second, MeterRealtimeEnabled: true})
+	require.NoError(t, err)
+	done := make(chan int, 1)
+	go func() {
+		w := httptest.NewRecorder()
+		metricsHandler(client, reporter).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+		done <- w.Code
+	}()
+	defer close(release)
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("report was not started")
+	}
+	select {
+	case status := <-done:
+		require.Equal(t, http.StatusOK, status)
+	case <-time.After(time.Second):
+		t.Fatal("metrics handler blocked on report")
 	}
 }
