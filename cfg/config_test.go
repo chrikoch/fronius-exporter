@@ -242,3 +242,41 @@ func Test_parseHeaderString(t *testing.T) {
 		})
 	}
 }
+
+func TestParseOrtsnetzLocation(t *testing.T) {
+	for _, tc := range []struct {
+		input          string
+		enabled, valid bool
+		lat, lon       float64
+	}{
+		{"", false, true, 0, 0}, {"52.52,13.40", true, true, 52.52, 13.4}, {" 0 , 0 ", true, true, 0, 0},
+		{"1", true, false, 0, 0}, {"1,2,3", true, false, 0, 0}, {"NaN,2", true, false, 0, 0}, {"91,2", true, false, 0, 0}, {"1,-181", true, false, 0, 0},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			lat, lon, enabled, err := ParseOrtsnetzLocation(tc.input, true)
+			assert.Equal(t, tc.valid, err == nil)
+			assert.Equal(t, tc.enabled, enabled)
+			if tc.valid {
+				assert.Equal(t, tc.lat, lat)
+				assert.Equal(t, tc.lon, lon)
+			}
+		})
+	}
+	_, _, _, err := ParseOrtsnetzLocation("0,0", false)
+	assert.Error(t, err)
+}
+
+func TestOrtsnetzLocationConfiguration(t *testing.T) {
+	t.Setenv("ORTSNETZ__LOCATION", "1,2")
+	c := ParseConfig("", "", "", flag.NewFlagSet("test", flag.ContinueOnError), []string{"--ortsnetz.location=3,4"})
+	assert.Equal(t, "3,4", c.Ortsnetz.Location)
+}
+
+func TestOrtsnetzEnvironmentAndDefault(t *testing.T) {
+	t.Setenv("ORTSNETZ__LOCATION", "1,2")
+	c := ParseConfig("", "", "", flag.NewFlagSet("test", flag.ContinueOnError), nil)
+	assert.Equal(t, "1,2", c.Ortsnetz.Location)
+	t.Setenv("ORTSNETZ__LOCATION", "")
+	c = ParseConfig("", "", "", flag.NewFlagSet("test", flag.ContinueOnError), nil)
+	assert.Empty(t, c.Ortsnetz.Location)
+}

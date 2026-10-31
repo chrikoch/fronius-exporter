@@ -87,6 +87,32 @@ Environment variable equivalent:
 SYMO__REQUEST_MODE=parallel fronius-exporter
 ```
 
+### Ortsnetz-Auslastung
+
+To contribute voltage measurements to [Ortsnetz-Auslastung](https://www.ortsnetz-auslastung.de/),
+set the location as latitude and longitude in decimal degrees:
+
+```console
+fronius-exporter --ortsnetz.location=52.52,13.40
+# Equivalent environment variable:
+ORTSNETZ__LOCATION=52.52,13.40 fronius-exporter
+```
+
+Reporting is disabled when the location is unset and requires meter real-time
+collection (`--symo.enable-meter-realtime`). The configured coordinates, meter
+measurement timestamp, and available grid connection point phase voltages are
+sent to the service. No frequency is sent. The meter timestamp must be within
+ten minutes of the exporter's clock, and at least one phase must have a valid
+voltage. Missing or invalid phases are reported as unavailable.
+
+The first valid scrape after startup sends the current voltages. Subsequent
+attempts occur at least five minutes apart, triggered by a valid `/metrics`
+scrape. They also include the minimum, maximum and arithmetic mean for each
+phase over the valid scrape samples collected since the previous attempt.
+These statistics cannot capture changes between scrapes. Without scrapes no
+measurements are sent. Reporting runs in the background with a timeout; failures
+are logged and discarded, and no failed measurements are queued for retry.
+
 ## As a client API
 
 See [Example](examples/client.go)

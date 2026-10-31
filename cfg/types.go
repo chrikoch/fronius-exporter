@@ -5,9 +5,13 @@ import "time"
 type (
 	// Configuration holds a strongly-typed tree of the configuration
 	Configuration struct {
-		Log      LogConfig  `koanf:"log"`
-		Symo     SymoConfig `koanf:"symo"`
-		BindAddr string     `koanf:"bind-addr"`
+		Ortsnetz OrtsnetzConfig `koanf:"ortsnetz"`
+		Log      LogConfig      `koanf:"log"`
+		Symo     SymoConfig     `koanf:"symo"`
+		BindAddr string         `koanf:"bind-addr"`
+	}
+	OrtsnetzConfig struct {
+		Location string `koanf:"location"`
 	}
 	// LogConfig configures the logging options
 	LogConfig struct {
