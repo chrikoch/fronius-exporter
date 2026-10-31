@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"sync"
@@ -136,16 +137,30 @@ func (r *voltageReporter) send(payload map[string]any) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	log.WithFields(log.Fields{"observed_at": payload["observed_at"], "l1_v": payload["l1_v"], "l2_v": payload["l2_v"], "l3_v": payload["l3_v"]}).Debug("Sending Ortsnetz measurement")
+	fields := log.Fields{"observed_at": payload["observed_at"], "l1_v": payload["l1_v"], "l2_v": payload["l2_v"], "l3_v": payload["l3_v"]}
+	for i := 1; i <= 3; i++ {
+		for _, stat := range []string{"min", "max", "avg"} {
+			key := fmt.Sprintf("l%d_v_%s", i, stat)
+			if value, ok := payload[key]; ok {
+				fields[key] = value
+			}
+		}
+	}
+	log.WithFields(fields).Debug("Sending Ortsnetz measurement")
 	response, err := r.client.Do(req)
 	if err != nil {
 		log.WithError(err).Warn("Could not send Ortsnetz measurement")
 		return
 	}
 	defer response.Body.Close()
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.WithError(err).Warn("Could not read Ortsnetz response")
+	}
+	result := log.WithFields(log.Fields{"status": response.StatusCode, "response": string(responseBody)})
 	if response.StatusCode != http.StatusAccepted {
-		log.WithField("status", response.StatusCode).Warn("Ortsnetz measurement was rejected")
+		result.Warn("Ortsnetz measurement was rejected")
 	} else {
-		log.WithField("status", response.StatusCode).Debug("Ortsnetz measurement accepted")
+		result.Debug("Ortsnetz measurement accepted")
 	}
 }

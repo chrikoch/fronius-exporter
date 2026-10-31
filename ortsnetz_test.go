@@ -217,3 +217,27 @@ func TestReporterLogsOutcomeAndInvalidSamples(t *testing.T) {
 	require.Contains(t, messages, "Sending Ortsnetz measurement")
 	require.Contains(t, messages, "Ortsnetz measurement accepted")
 }
+
+func TestReporterLogsSentStatisticsAndResponse(t *testing.T) {
+	oldHooks := log.StandardLogger().ReplaceHooks(make(log.LevelHooks))
+	hook := logtest.NewGlobal()
+	oldLevel := log.GetLevel()
+	log.SetLevel(log.DebugLevel)
+	defer func() { log.StandardLogger().ReplaceHooks(oldHooks); log.SetLevel(oldLevel) }()
+
+	for _, status := range []int{http.StatusAccepted, http.StatusBadRequest} {
+		hook.Reset()
+		reporter := newVoltageReporter(1, 2, &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(`{"message":"result"}`)), Header: make(http.Header)}, nil
+		})}, "http://example.test")
+		reporter.send(map[string]any{"observed_at": "2026-10-31T22:28:51Z", "l1_v": 230.0, "l2_v": -1.0, "l3_v": -1.0, "l1_v_min": 220.0, "l1_v_max": 240.0, "l1_v_avg": 230.0})
+		entries := hook.AllEntries()
+		require.Len(t, entries, 2)
+		require.Equal(t, 220.0, entries[0].Data["l1_v_min"])
+		require.Equal(t, 240.0, entries[0].Data["l1_v_max"])
+		require.Equal(t, 230.0, entries[0].Data["l1_v_avg"])
+		require.NotContains(t, entries[0].Data, "l2_v_avg")
+		require.Equal(t, status, entries[1].Data["status"])
+		require.Equal(t, `{"message":"result"}`, entries[1].Data["response"])
+	}
+}
